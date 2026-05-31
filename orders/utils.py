@@ -9,9 +9,10 @@ from django.conf import settings
 
 # ── File type support ─────────────────────────────────────────────────
 IMAGE_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp', 'bmp', 'gif', 'tiff', 'tif', 'heic', 'heif'}
+RAW_EXTENSIONS   = {'dng', 'arw', 'cr2', 'cr3', 'nef', 'raf', 'orf', 'rw2', 'pef', 'srw'}
 DOCX_EXTENSIONS  = {'docx'}
 PDF_EXTENSIONS   = {'pdf'}
-ALL_EXTENSIONS   = IMAGE_EXTENSIONS | DOCX_EXTENSIONS | PDF_EXTENSIONS
+ALL_EXTENSIONS   = IMAGE_EXTENSIONS | RAW_EXTENSIONS | DOCX_EXTENSIONS | PDF_EXTENSIONS
 
 
 def get_file_ext(filename):
@@ -32,12 +33,15 @@ def convert_to_pdf(file_obj, filename):
     if ext in IMAGE_EXTENSIONS:
         return _image_to_pdf(file_obj, filename)
 
+    if ext in RAW_EXTENSIONS:
+        return _raw_to_pdf(file_obj, filename)
+
     if ext in DOCX_EXTENSIONS:
         return _docx_to_pdf(file_obj, filename)
 
     raise ValueError(
         f'Формат «.{ext}» не поддерживается. '
-        f'Принимаются: PDF, JPG, PNG, WEBP, HEIC, TIFF, DOCX.'
+        f'Принимаются: PDF, фото (JPG, PNG, HEIC, DNG и др.), DOCX.'
     )
 
 
@@ -87,6 +91,38 @@ def _image_to_pdf(file_obj, filename):
                        save_all=True, append_images=frames[1:])
 
     return buf.getvalue(), len(frames)
+
+
+def _raw_to_pdf(file_obj, filename):
+    """Convert RAW camera formats (DNG, ARW, CR2, NEF…) to PDF via rawpy."""
+    try:
+        import rawpy
+        import numpy as np
+        from PIL import Image as PilImage
+    except ImportError:
+        raise ValueError(
+            'RAW-форматы (DNG, ARW, CR2…) требуют установки rawpy. '
+            'Обратитесь к администратору.'
+        )
+
+    with tempfile.NamedTemporaryFile(suffix='.' + get_file_ext(filename), delete=False) as tmp:
+        tmp.write(file_obj.read())
+        tmp_path = tmp.name
+
+    try:
+        with rawpy.imread(tmp_path) as raw:
+            rgb = raw.postprocess(
+                use_camera_wb=True,
+                half_size=False,
+                no_auto_bright=False,
+                output_bps=8,
+            )
+        img = PilImage.fromarray(rgb)
+        buf = BytesIO()
+        img.save(buf, format='PDF', resolution=200)
+        return buf.getvalue(), 1
+    finally:
+        os.unlink(tmp_path)
 
 
 def _docx_to_pdf(file_obj, filename):

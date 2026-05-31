@@ -34,7 +34,7 @@ class UploadForm(forms.Form):
     file = forms.FileField(
         label='Документ или фото',
         widget=forms.ClearableFileInput(attrs={
-            'accept': '.pdf,.jpg,.jpeg,.png,.webp,.heic,.heif,.tiff,.tif,.bmp,.gif,.docx',
+            'accept': '.pdf,.jpg,.jpeg,.png,.webp,.heic,.heif,.tiff,.tif,.bmp,.gif,.dng,.arw,.cr2,.cr3,.nef,.raf,.orf,.rw2,.docx',
             'class': 'form-control',
             'id': 'fileInput',
         }),

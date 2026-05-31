@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev gcc \
     libreoffice-writer libreoffice-calc \
     libheif-dev \
+    libraw-dev \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
