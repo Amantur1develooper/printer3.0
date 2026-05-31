@@ -32,21 +32,26 @@ class UploadForm(forms.Form):
         }),
     )
     file = forms.FileField(
-        label='PDF-файл',
+        label='Документ или фото',
         widget=forms.ClearableFileInput(attrs={
-            'accept': '.pdf',
+            'accept': '.pdf,.jpg,.jpeg,.png,.webp,.heic,.heif,.tiff,.tif,.bmp,.gif,.docx',
             'class': 'form-control',
             'id': 'fileInput',
         }),
     )
 
     def clean_file(self):
+        from .utils import ALL_EXTENSIONS, get_file_ext
         f = self.cleaned_data['file']
         max_mb = getattr(settings, 'MAX_FILE_SIZE_MB', 50)
         if f.size > max_mb * 1024 * 1024:
             raise forms.ValidationError(f'Файл слишком большой. Максимум {max_mb} МБ.')
-        if not f.name.lower().endswith('.pdf'):
-            raise forms.ValidationError('Принимаются только PDF-файлы.')
+        ext = get_file_ext(f.name)
+        if ext not in ALL_EXTENSIONS:
+            raise forms.ValidationError(
+                f'Формат «.{ext}» не поддерживается. '
+                'Принимаются: PDF, JPG, PNG, WEBP, HEIC, TIFF, DOCX.'
+            )
         return f
 
 

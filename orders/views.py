@@ -6,7 +6,8 @@ from django.utils import timezone
 
 from .models import Order, PaperStock, PrintTariff
 from .forms import UploadForm, ConfigureForm, ReceiptUploadForm
-from .utils import (count_pdf_pages, calculate_order, check_paper_availability,
+from django.core.files.base import ContentFile
+from .utils import (convert_to_pdf, calculate_order, check_paper_availability,
                     generate_payment_qr, get_tariff_data_for_terminal)
 
 
@@ -31,24 +32,26 @@ def upload_view(request, terminal_id):
         form = UploadForm(request.POST, request.FILES)
         if form.is_valid():
             f = form.cleaned_data['file']
+            original_name = f.name
             try:
-                page_count = count_pdf_pages(f)
+                pdf_data, page_count = convert_to_pdf(f, original_name)
             except Exception as e:
-                form.add_error('file', f'Не удалось прочитать PDF: {e}')
+                form.add_error('file', str(e))
                 return render(request, 'orders/upload.html', {'form': form, 'terminal': terminal})
 
             try:
-                f.seek(0)
+                import os
+                pdf_filename = os.path.splitext(original_name)[0] + '.pdf'
                 order = Order(
                     terminal=terminal,
-                    original_filename=f.name,
+                    original_filename=original_name,
                     total_pages=page_count,
                     status='created',
                     customer_name=form.cleaned_data['customer_name'],
                     customer_phone=form.cleaned_data['customer_phone'],
                     customer_comment=form.cleaned_data.get('customer_comment', ''),
                 )
-                order.file.save(f.name, f, save=False)
+                order.file.save(pdf_filename, ContentFile(pdf_data), save=False)
                 order.save()
                 return redirect('configure', order_id=order.id)
             except Exception as e:

@@ -121,12 +121,20 @@ def build_print_cmd(filepath, job, system_printer):
         settings = ','.join(settings_parts)
 
         if sumatra:
-            cmd = [sumatra, '-print-to-default' if not system_printer else f'-print-to "{system_printer}"',
-                   '-print-settings', settings, '-silent', filepath]
+            if system_printer:
+                cmd = [sumatra, f'-print-to', system_printer,
+                       '-print-settings', settings, '-silent', filepath]
+            else:
+                cmd = [sumatra, '-print-to-default',
+                       '-print-settings', settings, '-silent', filepath]
         else:
-            # Fallback: shell print (без настроек)
-            log.warning('SumatraPDF не найден. Установите: https://www.sumatrapdfreader.org/')
-            cmd = ['cmd', '/c', 'start', '/min', '', '/p', filepath]
+            # Fallback: PowerShell Print verb (без настроек копий/дуплекса)
+            log.warning('SumatraPDF не найден. Используется PowerShell-печать (без настроек).')
+            log.warning('Для полного контроля установите SumatraPDF: https://www.sumatrapdfreader.org/')
+            cmd = [
+                'powershell', '-NoProfile', '-NonInteractive', '-Command',
+                f'Start-Process -FilePath "{filepath}" -Verb Print -Wait'
+            ]
         return cmd
 
     else:

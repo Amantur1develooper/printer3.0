@@ -1,17 +1,120 @@
 import math
+import os
+import subprocess
+import tempfile
 import qrcode
 from io import BytesIO
 from django.core.files.base import ContentFile
 from django.conf import settings
 
+# ── File type support ─────────────────────────────────────────────────
+IMAGE_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp', 'bmp', 'gif', 'tiff', 'tif', 'heic', 'heif'}
+DOCX_EXTENSIONS  = {'docx'}
+PDF_EXTENSIONS   = {'pdf'}
+ALL_EXTENSIONS   = IMAGE_EXTENSIONS | DOCX_EXTENSIONS | PDF_EXTENSIONS
+
+
+def get_file_ext(filename):
+    return filename.lower().rsplit('.', 1)[-1] if '.' in filename else ''
+
+
+def convert_to_pdf(file_obj, filename):
+    """
+    Convert any supported file to PDF bytes.
+    Returns (pdf_bytes: bytes, page_count: int).
+    """
+    ext = get_file_ext(filename)
+
+    if ext in PDF_EXTENSIONS:
+        data = file_obj.read()
+        return data, _count_pdf_bytes(data)
+
+    if ext in IMAGE_EXTENSIONS:
+        return _image_to_pdf(file_obj, filename)
+
+    if ext in DOCX_EXTENSIONS:
+        return _docx_to_pdf(file_obj, filename)
+
+    raise ValueError(
+        f'Формат «.{ext}» не поддерживается. '
+        f'Принимаются: PDF, JPG, PNG, WEBP, HEIC, TIFF, DOCX.'
+    )
+
+
+def _count_pdf_bytes(data: bytes) -> int:
+    from pypdf import PdfReader
+    return len(PdfReader(BytesIO(data)).pages)
+
 
 def count_pdf_pages(file_obj):
+    """Legacy helper used in a few places."""
     try:
-        from pypdf import PdfReader
-        reader = PdfReader(file_obj)
-        return len(reader.pages)
+        return _count_pdf_bytes(file_obj.read())
     except Exception as e:
         raise ValueError(f'Не удалось прочитать PDF: {e}')
+
+
+def _image_to_pdf(file_obj, filename):
+    from PIL import Image
+
+    ext = get_file_ext(filename)
+    if ext in ('heic', 'heif'):
+        try:
+            import pillow_heif
+            pillow_heif.register_heif_opener()
+        except ImportError:
+            raise ValueError('HEIC-формат: установите pillow-heif на сервере.')
+
+    img = Image.open(file_obj)
+
+    # Collect all frames (multi-page TIFF / animated GIF)
+    frames = []
+    try:
+        while True:
+            frames.append(img.copy().convert('RGB'))
+            img.seek(img.tell() + 1)
+    except EOFError:
+        pass
+
+    if not frames:
+        frames = [img.convert('RGB')]
+
+    buf = BytesIO()
+    if len(frames) == 1:
+        frames[0].save(buf, format='PDF', resolution=200)
+    else:
+        frames[0].save(buf, format='PDF', resolution=200,
+                       save_all=True, append_images=frames[1:])
+
+    return buf.getvalue(), len(frames)
+
+
+def _docx_to_pdf(file_obj, filename):
+    with tempfile.TemporaryDirectory() as tmpdir:
+        docx_path = os.path.join(tmpdir, filename)
+        with open(docx_path, 'wb') as f:
+            f.write(file_obj.read())
+
+        result = subprocess.run(
+            ['libreoffice', '--headless', '--convert-to', 'pdf',
+             '--outdir', tmpdir, docx_path],
+            capture_output=True, timeout=120,
+        )
+        if result.returncode != 0:
+            raise ValueError(
+                f'Не удалось конвертировать DOCX: '
+                f'{result.stderr.decode(errors="replace")}'
+            )
+
+        pdf_name = os.path.splitext(filename)[0] + '.pdf'
+        pdf_path = os.path.join(tmpdir, pdf_name)
+        if not os.path.exists(pdf_path):
+            raise ValueError('Ошибка конвертации DOCX в PDF.')
+
+        with open(pdf_path, 'rb') as f:
+            pdf_data = f.read()
+
+    return pdf_data, _count_pdf_bytes(pdf_data)
 
 
 def parse_page_range(page_range_str, total_pages):
