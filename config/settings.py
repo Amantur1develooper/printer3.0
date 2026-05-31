@@ -116,7 +116,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Custom settings
 PAYMENT_PHONE = config('PAYMENT_PHONE', default='+996 700 000000')
 PAYMENT_RECIPIENT = config('PAYMENT_RECIPIENT', default='Онлайн Принтер')
-MAX_FILE_SIZE_MB = config('MAX_FILE_SIZE_MB', default=50, cast=int)
+MAX_FILE_SIZE_MB = config('MAX_FILE_SIZE_MB', default=3000, cast=int)
+
+# Allow large file uploads (3 GB)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 3 * 1024 * 1024 * 1024   # 3 GB
+FILE_UPLOAD_MAX_MEMORY_SIZE  = 3 * 1024 * 1024 * 1024   # 3 GB (write to disk above 2.5MB)
+FILE_UPLOAD_TEMP_DIR = None  # use system default temp dir
 MIN_PAPER_THRESHOLD = config('MIN_PAPER_THRESHOLD', default=5, cast=int)
 
 LOGIN_URL = "/login/"
