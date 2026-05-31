@@ -1,0 +1,408 @@
+/* =============================================
+   ONLINE PRINTER — Design System
+   Bg: #E8E8E8 | Accent: #111
+   ============================================= */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #E8E8E8;
+  --surface:   #FFFFFF;
+  --surface-2: #F3F3F3;
+  --border:    #DEDEDE;
+  --border-2:  #C8C8C8;
+  --text:      #111111;
+  --text-2:    #555555;
+  --text-3:    #999999;
+  --accent:    #111111;
+  --green:     #16A34A;
+  --red:       #DC2626;
+  --yellow:    #D97706;
+  --r:         12px;
+  --r-sm:      8px;
+  --shadow:    0 1px 3px rgba(0,0,0,.06), 0 4px 14px rgba(0,0,0,.06);
+  --shadow-lg: 0 2px 8px rgba(0,0,0,.08), 0 8px 28px rgba(0,0,0,.10);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── NAVBAR ──────────────────────────────── */
+.op-navbar {
+  background: #111;
+  height: 58px;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 16px rgba(0,0,0,.4);
+}
+.op-navbar .container {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 16px;
+}
+.op-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  flex: 1;
+}
+.op-logo-img {
+  height: 32px;
+  width: 32px;
+  object-fit: contain;
+  border-radius: 6px;
+  background: #E8E8E8;
+  padding: 2px;
+}
+.op-logo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+  gap: 2px;
+}
+.op-logo-text b {
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+.op-logo-text span {
+  color: #777;
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+}
+.op-nav-links { display: flex; gap: 4px; align-items: center; }
+.op-nav-link {
+  color: #888;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 12px;
+  border-radius: var(--r-sm);
+  transition: color .15s, background .15s;
+  letter-spacing: .02em;
+  white-space: nowrap;
+}
+.op-nav-link:hover { color: #fff; background: rgba(255,255,255,.09); }
+
+/* ─── LAYOUT ──────────────────────────────── */
+.op-main { padding: 20px 0 56px; }
+.op-main .container { padding: 0 16px; }
+
+/* ─── CARDS ───────────────────────────────── */
+.op-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.op-card-header {
+  padding: 11px 18px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--text-2);
+  background: var(--surface-2);
+}
+.op-card-body { padding: 18px; }
+
+/* bootstrap card overrides */
+.card {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--r) !important;
+  box-shadow: var(--shadow) !important;
+}
+.card-header {
+  background: var(--surface-2) !important;
+  border-bottom: 1px solid var(--border) !important;
+  padding: 11px 18px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .07em !important;
+  color: var(--text-2) !important;
+}
+.card-body { padding: 18px !important; }
+
+/* ─── TYPOGRAPHY ──────────────────────────── */
+.op-title   { font-size: 20px; font-weight: 800; letter-spacing: -.02em; }
+.op-subtitle { font-size: 14px; color: var(--text-3); margin-top: 4px; }
+
+/* ─── BUTTONS ─────────────────────────────── */
+.btn {
+  font-weight: 700 !important;
+  font-size: 14px !important;
+  border-radius: var(--r-sm) !important;
+  letter-spacing: .01em;
+  transition: all .15s;
+  padding: 10px 18px !important;
+}
+.btn-primary  { background: #111 !important; border-color: #111 !important; color: #fff !important; }
+.btn-primary:hover  { background: #333 !important; border-color: #333 !important; }
+.btn-success  { background: var(--green) !important; border-color: var(--green) !important; color: #fff !important; }
+.btn-success:hover  { opacity: .9; }
+.btn-lg { padding: 13px 22px !important; font-size: 15px !important; }
+.btn-sm { padding: 6px 12px !important; font-size: 12px !important; }
+.btn-outline-secondary {
+  background: transparent !important;
+  border: 1.5px solid var(--border-2) !important;
+  color: var(--text-2) !important;
+}
+.btn-outline-secondary:hover { background: var(--surface-2) !important; }
+
+/* ─── FORMS ───────────────────────────────── */
+.form-control, .form-select {
+  background: var(--surface) !important;
+  border: 1.5px solid var(--border) !important;
+  border-radius: var(--r-sm) !important;
+  font-size: 15px !important;
+  color: var(--text) !important;
+  padding: 10px 13px !important;
+  transition: border-color .15s, box-shadow .15s;
+  -webkit-appearance: none;
+}
+.form-control:focus, .form-select:focus {
+  border-color: #111 !important;
+  box-shadow: 0 0 0 3px rgba(17,17,17,.10) !important;
+}
+.form-control::placeholder { color: var(--text-3) !important; }
+.form-label {
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text-2) !important;
+  margin-bottom: 7px !important;
+  display: block;
+}
+.form-check-input:checked {
+  background-color: #111 !important;
+  border-color: #111 !important;
+}
+
+/* ─── DROP ZONE ───────────────────────────── */
+.drop-zone {
+  border: 2px dashed var(--border-2);
+  border-radius: var(--r);
+  padding: 32px 20px;
+  text-align: center;
+  cursor: pointer;
+  background: var(--surface-2);
+  transition: border-color .2s, background .2s;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.drop-zone:hover, .drop-zone:active, .drop-zone.drag-over {
+  border-color: #111;
+  background: #DCDCDC;
+}
+.drop-zone #fileInput { display: none; }
+
+/* ─── RECEIPT DROP ────────────────────────── */
+.receipt-drop {
+  border: 2px dashed var(--border-2);
+  border-radius: var(--r-sm);
+  padding: 18px;
+  text-align: center;
+  cursor: pointer;
+  background: var(--surface-2);
+  transition: border-color .2s, background .2s;
+}
+.receipt-drop:hover, .receipt-drop.drag-over { border-color: #111; background: #DCDCDC; }
+
+/* ─── ALERTS ──────────────────────────────── */
+.alert {
+  border: none !important;
+  border-radius: var(--r-sm) !important;
+  font-size: 13px !important;
+  padding: 10px 14px !important;
+}
+.alert-danger   { background: #FEE2E2 !important; color: #991B1B !important; }
+.alert-success  { background: #DCFCE7 !important; color: #14532D !important; }
+.alert-warning  { background: #FEF3C7 !important; color: #78350F !important; }
+.alert-info     { background: #DBEAFE !important; color: #1E3A8A !important; }
+.alert-secondary { background: var(--surface-2) !important; color: var(--text-2) !important; }
+
+/* ─── BADGES ──────────────────────────────── */
+.badge { font-weight: 700 !important; border-radius: 20px !important; padding: 5px 12px !important; }
+.badge.bg-secondary { background: #6B7280 !important; }
+.badge.bg-primary   { background: #111 !important; }
+.badge.bg-success   { background: var(--green) !important; }
+.badge.bg-danger    { background: var(--red) !important; }
+.badge.bg-warning   { background: var(--yellow) !important; color: #fff !important; }
+.badge.bg-dark      { background: #111 !important; }
+
+/* ─── TABLE ───────────────────────────────── */
+.table-borderless td { padding: 6px 8px !important; font-size: 13px !important; border: none !important; }
+
+/* ─── PRICE ROWS ──────────────────────────── */
+.price-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 0;
+  font-size: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.price-row:last-child { border: none; padding-bottom: 0; }
+.price-row.total { padding-top: 12px; font-size: 20px; font-weight: 900; }
+
+/* ─── WIZARD STEPS ────────────────────────── */
+.wizard-steps {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 20px;
+}
+.wizard-step {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.wizard-step.active { color: var(--text); }
+.wizard-step.done   { color: var(--green); }
+.wizard-step-num {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 800;
+  background: var(--border-2);
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+.wizard-step.active .wizard-step-num { background: #111; color: #fff; }
+.wizard-step.done   .wizard-step-num { background: var(--green); color: #fff; }
+.wizard-divider { flex: 1; height: 1.5px; background: var(--border-2); margin: 0 8px; min-width: 12px; }
+
+/* ─── PROGRESS DOTS ───────────────────────── */
+.step-dot {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--border-2);
+  margin: 0 auto;
+  position: relative; z-index: 2;
+  transition: background .3s, box-shadow .3s;
+}
+.step-dot.active { background: #111; box-shadow: 0 0 0 4px rgba(17,17,17,.12); }
+.step-dot.done   { background: var(--green); }
+.progress-line {
+  position: absolute;
+  top: 6px; left: 7%; width: 86%;
+  height: 2px; background: var(--border-2); z-index: 1;
+}
+
+/* ─── STATUS DOT ──────────────────────────── */
+.status-dot {
+  display: inline-block; width: 8px; height: 8px;
+  border-radius: 50%; flex-shrink: 0;
+}
+.status-dot.online  { background: var(--green); box-shadow: 0 0 0 3px rgba(22,163,74,.2); }
+.status-dot.offline { background: #9CA3AF; }
+
+/* ─── TERMINAL CARD ───────────────────────── */
+.terminal-card {
+  cursor: pointer;
+  transition: transform .15s, box-shadow .2s, border-color .2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.terminal-card:hover   { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(0,0,0,.11) !important; }
+.terminal-card.selected { border-color: #111 !important; }
+
+/* ─── FOOTER ──────────────────────────────── */
+.op-footer {
+  background: #111;
+  color: #555;
+  font-size: 12px;
+  padding: 16px 0;
+  letter-spacing: .03em;
+}
+.op-footer-logo {
+  height: 20px; width: 20px;
+  object-fit: cover; border-radius: 4px;
+  filter: brightness(0) invert(1);
+  opacity: .4;
+}
+
+/* ─── MOBILE  ─────────────────────────────── */
+@media (max-width: 575px) {
+
+  body { font-size: 14px; }
+
+  .op-main { padding: 14px 0 48px; }
+  .op-main .container { padding: 0 12px; }
+
+  /* Navbar */
+  .op-logo-img   { height: 28px; width: 28px; }
+  .op-logo-text b { font-size: 13px; }
+  .op-logo-text span { font-size: 7.5px; }
+
+  /* Cards tighter */
+  .op-card-body   { padding: 14px !important; }
+  .card-body      { padding: 14px !important; }
+  .op-card-header { padding: 9px 14px; }
+  .card-header    { padding: 9px 14px !important; }
+
+  /* Buttons full-width on mobile */
+  .btn-lg { font-size: 14px !important; padding: 13px 16px !important; }
+
+  /* Wizard — smaller labels hidden */
+  .wizard-step > div:last-child { display: none; }
+  .wizard-divider { min-width: 8px; margin: 0 4px; }
+
+  /* Drop zone compact */
+  .drop-zone { padding: 24px 16px; }
+  .drop-zone .drop-icon { font-size: 2rem !important; }
+
+  /* Map page: stack */
+  #map { height: 300px !important; border-radius: 10px !important; }
+
+  /* Configure: stack cols */
+  .configure-row { flex-direction: column !important; }
+
+  /* Price row */
+  .price-row       { font-size: 13px; padding: 6px 0; }
+  .price-row.total { font-size: 18px; }
+
+  /* Progress */
+  .progress-line { left: 8%; width: 84%; }
+
+  /* Tracking order number */
+  .track-order-num { font-size: 22px !important; }
+
+  /* Payment */
+  .payment-cols { flex-direction: column; }
+
+  /* Pill info tag — wrap on mobile */
+  .printer-pill { flex-wrap: wrap; font-size: 12px !important; }
+}
+
+@media (max-width: 767px) {
+  /* Map list on mobile: horizontal scroll or stack */
+  #terminalList { display: flex !important; flex-direction: column !important; }
+
+  /* Sticky calc not sticky on mobile */
+  [style*="position:sticky"] { position: relative !important; top: auto !important; }
+}

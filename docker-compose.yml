@@ -1,0 +1,47 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${DB_NAME:-onlineprinter}
+      POSTGRES_USER: ${DB_USER:-printer}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-printer123}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-printer}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    restart: unless-stopped
+    volumes:
+      - media_files:/app/media
+      - static_files:/app/staticfiles
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env
+    expose:
+      - "8000"
+
+  nginx:
+    image: nginx:1.25-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - media_files:/media:ro
+      - static_files:/static:ro
+    depends_on:
+      - web
+
+volumes:
+  postgres_data:
+  media_files:
+  static_files:

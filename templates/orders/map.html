@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% block title %}Online Printer — Выберите принтер{% endblock %}
+
+{% block content %}
+
+<!-- Hero — mobile центрируем, desktop слева -->
+<div class="mb-3">
+  <h1 class="op-title">Выберите принтер</h1>
+  <p class="op-subtitle">Нажмите на точку на карте или выберите из списка</p>
+</div>
+
+<div class="row g-3">
+
+  <!-- MAP — сначала на мобиле -->
+  <div class="col-lg-8 order-1 order-lg-2">
+    <div id="map"></div>
+  </div>
+
+  <!-- LIST -->
+  <div class="col-lg-4 order-2 order-lg-1">
+    {% if not terminals %}
+    <div class="op-card text-center py-5" style="color:var(--text-3)">
+      <div style="font-size:2.5rem;margin-bottom:8px">🖨️</div>
+      <div style="font-size:14px">Принтеры ещё не добавлены</div>
+    </div>
+    {% endif %}
+
+    <div style="display:flex;flex-direction:column;gap:8px" id="terminalList">
+      {% for t in terminals %}
+      <div class="op-card terminal-card"
+           data-id="{{ t.id }}"
+           onclick="selectTerminal({{ t.id }}, {{ t.latitude }}, {{ t.longitude }})">
+        <div style="padding:13px 15px">
+          <div style="display:flex;align-items:flex-start;gap:10px">
+            <span class="status-dot {% if t.is_online %}online{% else %}offline{% endif %}" style="margin-top:7px"></span>
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:700;font-size:15px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.name }}</div>
+              <div style="font-size:12px;color:var(--text-3);margin-bottom:10px">📍 {{ t.address }}</div>
+              {% if t.description %}
+              <div style="font-size:11px;color:var(--text-3);margin-bottom:10px">{{ t.description }}</div>
+              {% endif %}
+              <a href="{% url 'upload' t.id %}"
+                 onclick="event.stopPropagation()"
+                 class="btn btn-primary btn-sm"
+                 style="width:100%;text-align:center">
+                Выбрать <i class="bi bi-arrow-right ms-1"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block head %}
+<style>
+  #map {
+    height: 340px;
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+  }
+  @media(min-width:992px) {
+    #map { height: 580px; }
+  }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const TERMINALS = {{ terminals_json|safe }};
+const map = L.map('map').setView([42.8746, 74.5698], 12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap', maxZoom: 19
+}).addTo(map);
+
+function makeIcon(online) {
+  return L.divIcon({
+    className: '',
+    html: `<div style="
+      background:${online?'#111':'#9CA3AF'};
+      width:36px;height:36px;
+      border-radius:50% 50% 50% 4px;
+      transform:rotate(-45deg);
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 4px 12px rgba(0,0,0,.3);
+      border:2.5px solid #fff;
+    "><span style="transform:rotate(45deg);font-size:16px">🖨</span></div>`,
+    iconSize:[36,36], iconAnchor:[18,36], popupAnchor:[0,-40]
+  });
+}
+
+const markers = {};
+TERMINALS.forEach(t => {
+  const m = L.marker([t.lat, t.lng], {icon: makeIcon(t.is_online)}).addTo(map);
+  markers[t.id] = m;
+  m.bindPopup(`
+    <div style="min-width:200px;font-family:system-ui;padding:2px 0">
+      <div style="font-weight:800;font-size:14px;margin-bottom:3px">${t.name}</div>
+      <div style="font-size:12px;color:#888;margin-bottom:8px">📍 ${t.address}</div>
+      ${t.description?`<div style="font-size:11px;color:#aaa;margin-bottom:8px">${t.description}</div>`:''}
+      <div style="font-size:12px;font-weight:600;color:${t.is_online?'#16A34A':'#9CA3AF'};margin-bottom:10px">
+        ● ${t.is_online?'Онлайн':'Офлайн'}
+      </div>
+      <a href="/printer/${t.id}/upload/" style="
+        display:block;text-align:center;
+        background:#111;color:#fff;padding:9px;
+        border-radius:8px;text-decoration:none;
+        font-size:13px;font-weight:700;">
+        Выбрать →
+      </a>
+    </div>
+  `, {maxWidth:240});
+  m.on('click', () => {
+    document.querySelectorAll('.terminal-card').forEach(c => c.classList.remove('selected'));
+    const card = document.querySelector(`.terminal-card[data-id="${t.id}"]`);
+    if (card) { card.classList.add('selected'); card.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+  });
+});
+
+if (TERMINALS.length) {
+  const g = L.featureGroup(Object.values(markers));
+  map.fitBounds(g.getBounds().pad(0.3));
+}
+
+function selectTerminal(id, lat, lng) {
+  map.flyTo([lat, lng], 16, {duration:0.6});
+  if (markers[id]) markers[id].openPopup();
+}
+</script>
+{% endblock %}

@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% block title %}Заказ {{ order.order_number }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-xl-5 col-lg-6 col-md-8">
+
+  <!-- Order number -->
+  <div class="text-center mb-4">
+    <div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text-3);margin-bottom:6px">Заказ</div>
+    <div style="font-size:28px;font-weight:900;letter-spacing:.04em">{{ order.order_number }}</div>
+    <div style="font-size:13px;color:var(--text-3);margin-top:4px">{{ order.terminal.name }} · {{ order.terminal.address }}</div>
+  </div>
+
+  <!-- Status card -->
+  <div class="op-card mb-3 text-center">
+    <div class="op-card-body" style="padding:32px 20px">
+      <div id="statusIcon" style="font-size:3rem;margin-bottom:12px;line-height:1">
+        {% if order.status == 'printed' %}✅
+        {% elif order.status == 'printing' %}🖨️
+        {% elif order.status == 'queued' %}⏳
+        {% elif order.status == 'error' %}❌
+        {% elif order.status == 'cancelled' %}🚫
+        {% else %}💳{% endif %}
+      </div>
+      <div id="statusText" style="font-size:18px;font-weight:800;letter-spacing:-.01em">
+        {{ order.get_status_display_ru }}
+      </div>
+      {% if order.status == 'error' and order.error_message %}
+      <div class="alert alert-danger mt-3 text-start" style="font-size:13px">{{ order.error_message }}</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Progress bar -->
+  <div class="op-card mb-3">
+    <div class="op-card-body" style="padding:16px 20px">
+      <div class="progress-steps">
+        <div style="display:flex;justify-content:space-between;position:relative;margin-bottom:8px">
+          <div class="progress-line"></div>
+          {% with s=order.status %}
+          <div class="step-dot {% if s == 'created' or s == 'calculated' %}active{% elif s in 'awaiting_payment,receipt_uploaded,paid,queued,printing,printed' %}done{% endif %}"></div>
+          <div class="step-dot {% if s == 'awaiting_payment' or s == 'receipt_uploaded' %}active{% elif s in 'paid,queued,printing,printed' %}done{% endif %}"></div>
+          <div class="step-dot {% if s == 'paid' or s == 'queued' %}active{% elif s in 'printing,printed' %}done{% endif %}"></div>
+          <div class="step-dot {% if s == 'printing' %}active{% elif s == 'printed' %}done{% endif %}"></div>
+          <div class="step-dot {% if s == 'printed' %}active done{% endif %}"></div>
+          {% endwith %}
+        </div>
+        <div style="display:flex;justify-content:space-between">
+          <small style="font-size:10px;color:var(--text-3);text-align:center;width:20%">Создан</small>
+          <small style="font-size:10px;color:var(--text-3);text-align:center;width:20%">Оплата</small>
+          <small style="font-size:10px;color:var(--text-3);text-align:center;width:20%">Очередь</small>
+          <small style="font-size:10px;color:var(--text-3);text-align:center;width:20%">Печать</small>
+          <small style="font-size:10px;color:var(--text-3);text-align:center;width:20%">Готово</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Details -->
+  <div class="op-card mb-3">
+    <div class="op-card-header">Детали заказа</div>
+    <div class="op-card-body" style="padding:0">
+      {% for label, value in details %}
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 20px;border-bottom:1px solid var(--border)">
+        <span style="font-size:13px;color:var(--text-2)">{{ label }}</span>
+        <span style="font-size:13px;font-weight:600">{{ value }}</span>
+      </div>
+      {% endfor %}
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 20px">
+        <span style="font-size:14px;font-weight:700">Итого</span>
+        <span style="font-size:22px;font-weight:900">{{ order.total_cost }} сом</span>
+      </div>
+    </div>
+  </div>
+
+  {% if order.status == 'awaiting_payment' %}
+  <a href="{% url 'payment' order.id %}" class="btn btn-primary btn-lg w-100 mb-3">
+    Перейти к оплате <i class="bi bi-arrow-right ms-1"></i>
+  </a>
+  {% endif %}
+
+  {% if order.status == 'printed' %}
+  <div class="alert alert-success text-center" style="font-size:14px;font-weight:600">
+    🎉 Ваш документ готов! Заберите у принтера.
+  </div>
+  {% endif %}
+
+  <div class="text-center" id="refreshInfo">
+    <small style="color:var(--text-3);font-size:12px">
+      <i class="bi bi-arrow-repeat me-1"></i>Обновляется автоматически
+    </small>
+  </div>
+
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const ORDER_NUMBER = '{{ order.order_number }}';
+const FINAL = ['printed', 'error', 'cancelled'];
+let current = '{{ order.status }}';
+const ICONS = {
+  printed:'✅', printing:'🖨️', queued:'⏳', paid:'💰',
+  error:'❌', cancelled:'🚫', awaiting_payment:'💳',
+  receipt_uploaded:'📎', created:'📄', calculated:'📋'
+};
+const LABELS = {
+  printed:'Распечатан', printing:'Печатается', queued:'В очереди',
+  paid:'Оплачен', error:'Ошибка', cancelled:'Отменён',
+  awaiting_payment:'Ожидает оплаты', receipt_uploaded:'Чек загружен',
+  created:'Создан', calculated:'Рассчитан'
+};
+
+async function poll() {
+  if (FINAL.includes(current)) return;
+  try {
+    const r = await fetch(`/track/${ORDER_NUMBER}/status/`);
+    const d = await r.json();
+    if (d.status !== current) {
+      current = d.status;
+      document.getElementById('statusIcon').textContent = ICONS[d.status] || '📄';
+      document.getElementById('statusText').textContent = d.status_display;
+      if (d.status === 'printed') {
+        document.getElementById('refreshInfo').innerHTML =
+          '<div class="alert alert-success mt-2" style="font-size:14px;font-weight:600">🎉 Готово! Заберите у принтера.</div>';
+        return;
+      }
+      if (FINAL.includes(d.status)) return;
+    }
+    setTimeout(poll, 5000);
+  } catch { setTimeout(poll, 10000); }
+}
+setTimeout(poll, 5000);
+</script>
+{% endblock %}

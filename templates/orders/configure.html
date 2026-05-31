@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+{% block title %}Параметры печати{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-xl-9 col-lg-11">
+
+  <!-- Wizard -->
+  <div class="wizard-steps mb-4">
+    <div class="wizard-step done"><div class="wizard-step-num">✓</div><div>Файл</div></div>
+    <div class="wizard-divider"></div>
+    <div class="wizard-step active"><div class="wizard-step-num">2</div><div>Параметры</div></div>
+    <div class="wizard-divider"></div>
+    <div class="wizard-step"><div class="wizard-step-num">3</div><div>Оплата</div></div>
+  </div>
+
+  <!-- File info -->
+  <div style="display:inline-flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:30px;padding:6px 16px;margin-bottom:20px;font-size:13px">
+    <span>📄</span>
+    <span style="font-weight:600">{{ order.original_filename }}</span>
+    <span style="color:var(--text-3)">·</span>
+    <span style="color:var(--text-2)">{{ order.total_pages }} стр.</span>
+    <span style="color:var(--text-3)">·</span>
+    <span style="color:var(--text-2)">{{ order.terminal.name }}</span>
+  </div>
+
+  {% if form.non_field_errors %}
+  <div class="alert alert-danger mb-3">{{ form.non_field_errors }}</div>
+  {% endif %}
+
+  <form method="post" id="configForm">
+    {% csrf_token %}
+    <div class="row g-4">
+
+      <!-- LEFT: print settings -->
+      <div class="col-lg-7">
+        <div class="op-card">
+          <div class="op-card-header">Параметры печати</div>
+          <div class="op-card-body">
+            <div class="row g-3">
+
+              <div class="col-6">
+                <label class="form-label">Копии</label>
+                {{ form.copies }}
+              </div>
+              <div class="col-6">
+                <label class="form-label">Формат</label>
+                {{ form.paper_format }}
+              </div>
+              <div class="col-6">
+                <label class="form-label">Цвет</label>
+                {{ form.color }}
+              </div>
+              <div class="col-6">
+                <label class="form-label">Тип печати</label>
+                {{ form.duplex }}
+              </div>
+              <div class="col-12">
+                <label class="form-label">Страницы <span style="color:var(--text-3);font-weight:400;text-transform:none;letter-spacing:0">— пусто = все {{ order.total_pages }}</span></label>
+                {{ form.page_range }}
+              </div>
+              <div class="col-12">
+                <label class="form-label">Ориентация</label>
+                {{ form.orientation }}
+              </div>
+
+              <div class="col-12">
+                <div style="display:flex;gap:20px">
+                  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+                    {{ form.even_only }}
+                    <span>Только чётные</span>
+                  </label>
+                  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+                    {{ form.odd_only }}
+                    <span>Только нечётные</span>
+                  </label>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: live calculation -->
+      <div class="col-lg-5">
+        <div class="op-card" style="position:sticky;top:72px">
+          <div class="op-card-header">Расчёт стоимости</div>
+          <div class="op-card-body">
+
+            <div id="calcSpinner" class="text-center py-3 d-none">
+              <span class="spinner-border spinner-border-sm text-secondary"></span>
+            </div>
+
+            <div id="calcResult">
+              <div class="price-row">
+                <span style="color:var(--text-2)">Страниц в файле</span>
+                <span id="c_total_pages" style="font-weight:600">{{ order.total_pages }}</span>
+              </div>
+              <div class="price-row">
+                <span style="color:var(--text-2)">Выбрано страниц</span>
+                <span id="c_selected" style="font-weight:600">—</span>
+              </div>
+              <div class="price-row">
+                <span style="color:var(--text-2)">Листов × копий</span>
+                <span id="c_sheets" style="font-weight:600">—</span>
+              </div>
+              <div class="price-row">
+                <span style="color:var(--text-2)">Цена за лист</span>
+                <span id="c_price_sheet" style="font-weight:600">—</span>
+              </div>
+              <div class="price-row total">
+                <span style="font-weight:800">Итого</span>
+                <span id="c_total" style="color:var(--accent);font-weight:900">—</span>
+              </div>
+            </div>
+
+            <div id="paperWarn" class="alert alert-danger d-none mt-3" style="font-size:12px;padding:8px 12px">
+              <i class="bi bi-exclamation-triangle-fill me-1"></i>
+              <span id="paperWarnText"></span>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="mt-4">
+      <button type="submit" class="btn btn-primary btn-lg w-100" id="submitBtn">
+        Перейти к оплате <i class="bi bi-arrow-right ms-2"></i>
+      </button>
+    </div>
+
+  </form>
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const ORDER_ID = {{ order.id }};
+const TARIFFS = {{ tariff_data|safe }};
+const TOTAL_PAGES = {{ order.total_pages }};
+
+function calcLocal() {
+  const copies = +document.getElementById('id_copies').value||1;
+  const color = document.getElementById('id_color').value;
+  const duplex = document.getElementById('id_duplex').value;
+  const fmt = document.getElementById('id_paper_format').value;
+  const key = `${fmt}_${color}_${duplex==='true'?'duplex':'single'}`;
+  return TARIFFS[key] || null;
+}
+
+let timer = null;
+function scheduleCalc() {
+  clearTimeout(timer);
+  document.getElementById('calcSpinner').classList.remove('d-none');
+  timer = setTimeout(doCalc, 450);
+}
+
+async function doCalc() {
+  const copies = +document.getElementById('id_copies').value||1;
+  const color  = document.getElementById('id_color').value;
+  const duplex = document.getElementById('id_duplex').value;
+  const fmt    = document.getElementById('id_paper_format').value;
+  const range  = document.getElementById('id_page_range').value;
+  const even   = document.getElementById('id_even_only').checked;
+  const odd    = document.getElementById('id_odd_only').checked;
+
+  try {
+    const r = await fetch('/ajax/calculate/', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','X-CSRFToken': getCsrf()},
+      body: JSON.stringify({order_id:ORDER_ID, copies, color, duplex, paper_format:fmt,
+                            page_range:range, even_only:even, odd_only:odd})
+    });
+    const d = await r.json();
+    document.getElementById('calcSpinner').classList.add('d-none');
+    if (d.error) return;
+
+    document.getElementById('c_selected').textContent   = d.selected_pages;
+    document.getElementById('c_sheets').textContent     = `${d.sheets_per_copy} × ${copies}`;
+    document.getElementById('c_price_sheet').textContent = d.price_per_sheet + ' сом';
+    document.getElementById('c_total').textContent      = d.total_cost + ' сом';
+
+    const warn = document.getElementById('paperWarn');
+    if (!d.paper_ok) {
+      document.getElementById('paperWarnText').textContent =
+        `Мало бумаги: доступно ${d.paper_available} л., нужно ${d.total_sheets} л.`;
+      warn.classList.remove('d-none');
+    } else {
+      warn.classList.add('d-none');
+    }
+  } catch(e) {
+    document.getElementById('calcSpinner').classList.add('d-none');
+  }
+}
+
+function getCsrf() {
+  return document.cookie.split('; ').find(r=>r.startsWith('csrftoken='))?.split('=')[1]||'';
+}
+
+['id_copies','id_color','id_duplex','id_paper_format','id_page_range'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) { el.addEventListener('input', scheduleCalc); el.addEventListener('change', scheduleCalc); }
+});
+['id_even_only','id_odd_only'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('change', scheduleCalc);
+});
+
+doCalc();
+
+document.getElementById('configForm').addEventListener('submit', () => {
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Оформляем...';
+});
+</script>
+{% endblock %}

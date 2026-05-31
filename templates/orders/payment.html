@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+{% block title %}Оплата {{ order.order_number }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-lg-6 col-md-8">
+
+  <!-- Wizard -->
+  <div class="wizard-steps mb-4">
+    <div class="wizard-step done"><div class="wizard-step-num">✓</div><div>Файл</div></div>
+    <div class="wizard-divider"></div>
+    <div class="wizard-step done"><div class="wizard-step-num">✓</div><div>Параметры</div></div>
+    <div class="wizard-divider"></div>
+    <div class="wizard-step active"><div class="wizard-step-num">3</div><div>Оплата</div></div>
+  </div>
+
+  <!-- Summary -->
+  <div class="op-card mb-3">
+    <div class="op-card-header">Заказ {{ order.order_number }}</div>
+    <div class="op-card-body">
+      <div class="price-row"><span style="color:var(--text-2)">Файл</span><span style="font-weight:600;max-width:60%;text-align:right;font-size:13px">{{ order.original_filename }}</span></div>
+      <div class="price-row"><span style="color:var(--text-2)">Листов</span><span style="font-weight:600">{{ order.total_sheets }}</span></div>
+      <div class="price-row"><span style="color:var(--text-2)">Копий</span><span style="font-weight:600">{{ order.copies }}</span></div>
+      <div class="price-row total"><span>Итого</span><span style="color:var(--accent)">{{ order.total_cost }} сом</span></div>
+    </div>
+  </div>
+
+  <!-- How to pay -->
+  <div class="op-card mb-3">
+    <div class="op-card-header" style="background:#FEF3C7;color:#78350F">Как оплатить</div>
+    <div class="op-card-body">
+      <div style="display:flex;align-items:center;gap:12px;background:var(--surface-2);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:12px">
+        <div>
+          <div style="font-size:11px;color:var(--text-3);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Перевод на номер</div>
+          <div style="font-size:22px;font-weight:900;letter-spacing:.03em">{{ payment_phone }}</div>
+          <div style="font-size:12px;color:var(--text-3);margin-top:2px">{{ payment_recipient }}</div>
+        </div>
+        <button type="button" onclick="copyPhone(this)" data-phone="{{ payment_phone }}"
+          class="btn btn-outline-secondary btn-sm ms-auto" style="flex-shrink:0;padding:8px 12px">
+          <i class="bi bi-copy"></i>
+        </button>
+      </div>
+      <div style="font-size:13px;color:var(--text-2);line-height:1.7">
+        В комментарии к переводу укажите:<br>
+        <strong style="font-size:15px;letter-spacing:.03em">{{ order.order_number }}</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- QR -->
+  {% if order.qr_code %}
+  <div class="op-card mb-3 text-center">
+    <div class="op-card-body" style="padding:16px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);margin-bottom:10px">QR-код для оплаты</div>
+      <img src="{{ order.qr_code.url }}" alt="QR" style="max-width:160px;width:100%;border-radius:8px">
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Receipt upload + confirm -->
+  <form method="post" enctype="multipart/form-data" id="payForm">
+    {% csrf_token %}
+    <div class="op-card mb-3">
+      <div class="op-card-header">Фото чека <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-3)">— необязательно</span></div>
+      <div class="op-card-body">
+        <div id="previewWrap" style="display:none;margin-bottom:10px;text-align:center">
+          <img id="previewImg" src="" alt="Чек" style="max-height:180px;border-radius:8px;max-width:100%">
+        </div>
+        <div id="receiptDrop" class="receipt-drop">
+          <i class="bi bi-camera" style="font-size:1.8rem;color:var(--text-3)"></i>
+          <div style="font-size:13px;color:var(--text-2);margin-top:6px;font-weight:600">Нажмите, чтобы загрузить чек</div>
+          <div style="font-size:11px;color:var(--text-3);margin-top:2px">скриншот или фото</div>
+          <input type="file" name="payment_receipt" id="receiptInput" accept="image/*" capture="environment" style="display:none">
+        </div>
+        <input type="text" name="transaction_id" class="form-control mt-3"
+               placeholder="Номер транзакции (необязательно)" style="font-size:13px">
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-success btn-lg w-100" id="submitBtn">
+      <i class="bi bi-check-circle-fill me-2"></i>Я оплатил — отправить в печать
+    </button>
+  </form>
+
+  <div class="text-center mt-3">
+    <a href="/track/{{ order.order_number }}/" style="font-size:12px;color:var(--text-3);text-decoration:none">
+      Отслеживать заказ без загрузки чека →
+    </a>
+  </div>
+
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function copyPhone(btn) {
+  navigator.clipboard.writeText(btn.dataset.phone).then(() => {
+    btn.innerHTML = '<i class="bi bi-check"></i>';
+    setTimeout(() => btn.innerHTML = '<i class="bi bi-copy"></i>', 2000);
+  });
+}
+const rdrop = document.getElementById('receiptDrop');
+const rinput = document.getElementById('receiptInput');
+rdrop.addEventListener('click', () => rinput.click());
+rdrop.addEventListener('dragover', e => { e.preventDefault(); rdrop.classList.add('drag-over'); });
+rdrop.addEventListener('dragleave', () => rdrop.classList.remove('drag-over'));
+rdrop.addEventListener('drop', e => {
+  e.preventDefault(); rdrop.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f) { try { const dt=new DataTransfer(); dt.items.add(f); rinput.files=dt.files; } catch(e){} showPreview(f); }
+});
+rinput.addEventListener('change', e => { if (e.target.files[0]) showPreview(e.target.files[0]); });
+function showPreview(f) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('previewImg').src = e.target.result;
+    document.getElementById('previewWrap').style.display = 'block';
+    rdrop.style.padding = '10px';
+    rdrop.querySelector('div').textContent = f.name;
+  };
+  reader.readAsDataURL(f);
+}
+document.getElementById('payForm').addEventListener('submit', () => {
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Отправляем...';
+});
+</script>
+{% endblock %}

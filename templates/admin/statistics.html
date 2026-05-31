@@ -1,0 +1,63 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<h1>Статистика</h1>
+
+<div class="row" style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:24px">
+    <div style="background:#d4edda;border-radius:8px;padding:20px;flex:1;min-width:180px">
+        <div style="font-size:2rem;font-weight:bold;color:#155724">{{ stats.revenue_paid }} сом</div>
+        <div style="color:#155724">Выручка (оплачено)</div>
+    </div>
+    <div style="background:#cce5ff;border-radius:8px;padding:20px;flex:1;min-width:180px">
+        <div style="font-size:2rem;font-weight:bold;color:#004085">{{ stats.total_orders_today }}</div>
+        <div style="color:#004085">Заказов сегодня</div>
+    </div>
+    <div style="background:#fff3cd;border-radius:8px;padding:20px;flex:1;min-width:180px">
+        <div style="font-size:2rem;font-weight:bold;color:#856404">{{ stats.sheets_today }}</div>
+        <div style="color:#856404">Листов напечатано (сегодня)</div>
+    </div>
+    <div style="background:#f8d7da;border-radius:8px;padding:20px;flex:1;min-width:180px">
+        <div style="font-size:2rem;font-weight:bold;color:#721c24">{{ stats.errors_today }}</div>
+        <div style="color:#721c24">Ошибок сегодня</div>
+    </div>
+</div>
+
+<h2>По статусам</h2>
+<table style="width:100%;max-width:400px;border-collapse:collapse;margin-bottom:24px">
+    <thead><tr><th style="text-align:left;padding:6px;border-bottom:1px solid #dee2e6">Статус</th>
+    <th style="text-align:right;padding:6px;border-bottom:1px solid #dee2e6">Кол-во</th></tr></thead>
+    <tbody>
+    {% for row in stats.orders_by_status %}
+    <tr>
+        <td style="padding:6px">{{ row.status }}</td>
+        <td style="padding:6px;text-align:right;font-weight:bold">{{ row.count }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<h2>Последние 20 заказов</h2>
+<table style="width:100%;border-collapse:collapse">
+    <thead>
+    <tr style="background:#f8f9fa">
+        <th style="padding:8px;text-align:left">Номер</th>
+        <th style="padding:8px">Клиент</th>
+        <th style="padding:8px">Листов</th>
+        <th style="padding:8px">Сумма</th>
+        <th style="padding:8px">Статус</th>
+        <th style="padding:8px">Создан</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for o in stats.recent_orders %}
+    <tr style="border-bottom:1px solid #dee2e6">
+        <td style="padding:8px"><a href="/admin/orders/order/{{ o.id }}/change/">{{ o.order_number }}</a></td>
+        <td style="padding:8px">{{ o.customer_name }}</td>
+        <td style="padding:8px;text-align:center">{{ o.total_sheets }}</td>
+        <td style="padding:8px;text-align:right">{{ o.total_cost }} сом</td>
+        <td style="padding:8px">{{ o.get_status_display_ru }}</td>
+        <td style="padding:8px">{{ o.created_at|date:"d.m H:i" }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
