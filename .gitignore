@@ -24,6 +24,7 @@ staticfiles/
 static/collected/
 
 # Environment variables
+
 .env
 .env.local
 .env.production

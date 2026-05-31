@@ -7,6 +7,18 @@ SECRET_KEY = config('SECRET_KEY', default='dev-secret-key-change-in-production-p
 DEBUG = config('DEBUG', default=True, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
 
+# Trust proxy headers from nginx
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# CSRF trusted origins — auto-built from ALLOWED_HOSTS
+_hosts = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
+CSRF_TRUSTED_ORIGINS = [
+    f'http://{h}' for h in _hosts if h not in ('127.0.0.1', 'localhost')
+] + [
+    f'https://{h}' for h in _hosts if h not in ('127.0.0.1', 'localhost')
+]
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
